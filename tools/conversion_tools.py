@@ -51,7 +51,7 @@ def convert_lcs_to_fuel(path):
             try:
                 fuel.append(lcs_to_clcs[lc])
             except KeyError:
-                fuel.append(1337)
+                fuel.append(322)
             byte = lcs.read(1)
     return fuel
 
