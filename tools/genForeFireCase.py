@@ -32,10 +32,6 @@ import time
 def FiretoNC(filename, domainProperties, parametersProperties, fuelModelMap, elevation=None, wind=None, fluxModelMap =None):
  
         ncfile =  netcdf.netcdf_file(filename, 'w')   
-        ncfile.createDimension('DIMX', fuelModelMap.shape[1])
-        ncfile.createDimension('DIMY', fuelModelMap.shape[0])
-        ncfile.createDimension('DIMZ', 1)
-        ncfile.createDimension('DIMT', 1)
         ncfile.version = "FF.1.0"
         domain = ncfile.createVariable('domain', 'S1', ())
         domain.type = "domain" 
@@ -51,28 +47,39 @@ def FiretoNC(filename, domainProperties, parametersProperties, fuelModelMap, ele
         parameters = ncfile.createVariable('parameters', 'S1', ())
         parameters.type = "parameters"       
 
-        parameters.projectionproperties = parametersProperties['projectionproperties'] 
-        parameters.date = parametersProperties['date'] 
-        parameters.duration = parametersProperties['duration'] 
+        # parameters.projectionproperties = parametersProperties['projectionproperties'] 
+        # parameters.date = parametersProperties['date'] 
+        # parameters.duration = parametersProperties['duration'] 
         parameters.projection = parametersProperties['projection']
-        parameters.refYear = parametersProperties['refYear'] 
-        parameters.refDay = parametersProperties['refDay']
+        # parameters.refYear = parametersProperties['refYear'] 
+        # parameters.refDay = parametersProperties['refDay']
         
-        
-        fuel = ncfile.createVariable('fuel', 'i4', ('DIMT', 'DIMZ', 'DIMY', 'DIMX'))
+        ncfile.createDimension('fx', fuelModelMap.shape[1])
+        ncfile.createDimension('fy', fuelModelMap.shape[0])
+        ncfile.createDimension('fz', 1)
+        ncfile.createDimension('ft', 1)
+        fuel = ncfile.createVariable('fuel', 'i4', ('ft', 'fz', 'fy', 'fx'))
         fuel[0,0,:,:] = fuelModelMap 
         fuel.type = "fuel" ;
         
-        if (elevation != None):
-            altitude = ncfile.createVariable('altitude', 'f8', ('DIMT', 'DIMZ', 'DIMY', 'DIMX'))
+        if (elevation is not None):
+            ncfile.createDimension('ax', elevation.shape[1])
+            ncfile.createDimension('ay', elevation.shape[0])
+            ncfile.createDimension('az', 1)
+            ncfile.createDimension('at', 1)
+            altitude = ncfile.createVariable('altitude', 'f8', ('at', 'az', 'ay', 'ax'))
             altitude[0,0,:,:] = elevation
             altitude.type = "data" 
         
-        if (wind != None):
-            windU = ncfile.createVariable('windU', 'f8', ('DIMT', 'DIMZ', 'DIMY', 'DIMX'))
+        if (wind is not None):
+            ncfile.createDimension('wx', wind["zonal"].shape[1])
+            ncfile.createDimension('wy', wind["zonal"].shape[0])
+            ncfile.createDimension('wz', 1)
+            ncfile.createDimension('wt', 1)
+            windU = ncfile.createVariable('windU', 'f8', ('wt', 'wz', 'wy', 'wx'))
             windU.type = "data" 
             windU[0,0,:,:] = wind["zonal"]
-            windV = ncfile.createVariable('windV', 'f8', ('DIMT', 'DIMZ', 'DIMY', 'DIMX'))
+            windV = ncfile.createVariable('windV', 'f8', ('wt', 'wz', 'wy', 'wx'))
             windV.type = "data" 
             windV[0,0,:,:] = wind["meridian"]
             
@@ -83,12 +90,12 @@ def FiretoNC(filename, domainProperties, parametersProperties, fuelModelMap, ele
             
             for fMap in fluxModelMap:  
                 fVar = ncfile.createVariable(fMap["name"], 'i4', ('DIMT', 'DIMZ', 'DIMY', 'DIMX'))
-                fVar.type = "flux" ;
+                fVar.type = "flux"
                 for entry in fMap["table"].keys():
                     setattr(fVar, "model%dname"%fMap["table"][entry], entry)
                 fVar.indices = np.array(fMap["table"].values(),dtype=('i4'))
                 fVar[0,0,:,:] = fMap["data"]
-        print "writing ", filename
+        print("writing ", filename)
         ncfile.sync()
         ncfile.close()
 

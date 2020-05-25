@@ -1,0 +1,9 @@
+tools/TerrainElevation/*
+tools/TerrainLandClass/*
+*.o
+*.os
+*.so
+*.pyc
+*.json
+.sconsign.dblite
+CommandShell
