@@ -46,7 +46,6 @@ def convert_lcs_to_fuel(path):
     fuel = []
     with open(path, 'rb') as lcs:
         byte = lcs.read(1)
-        n = 0
         while byte:
             lc = int.from_bytes(byte, 'little')
             try:
@@ -126,12 +125,12 @@ def calculate_qmid_bounds(left, right, top, bottom):
 
     return (min_u, max_u, max_v, min_v), (min_long, max_long, max_lat, min_lat)
 
-if __name__ == "__main__":
+def prepare_landscape(left, right, top, bottom, proj, path):
     #lcs = get_lcs()
-    qmid, coords = calculate_qmid_bounds(-10.9, -6, 42.1, 37)
+    qmid, coords = calculate_qmid_bounds(left, right, top, bottom)
     # print(qmid, coords)
 
-    to_proj = Proj('epsg:3857') # conformal projection in metres
+    to_proj = Proj(proj) # conformal projection in metres
     from_proj = Proj('epsg:4326') # WGS 84, used by FSX
 
     sw_coords = transform(from_proj, to_proj, coords[3], coords[0])
@@ -156,7 +155,7 @@ if __name__ == "__main__":
         row_fuel = None
         for u in range(qmid[0], qmid[1] + 1):
             # print(u, v)
-            grid_fuel = convert_lcs_to_fuel(f'tools/TerrainLandClass/LC-7-{u}-{v}.bin')
+            grid_fuel = convert_lcs_to_fuel(f'TerrainLandClass/LC-7-{u}-{v}.bin')
             grid_fuel = np.array(grid_fuel).reshape(257, 257)
             # print(grid_fuel)
             if row_fuel is None:
@@ -176,7 +175,7 @@ if __name__ == "__main__":
         row_altitude = None
         for u in range(qmid[0], qmid[1] + 1):
             # print(u, v)
-            grid_altitude = convert_dem_to_altitude(f'tools/TerrainElevation/DEM-7-{u}-{v}.bin')
+            grid_altitude = convert_dem_to_altitude(f'TerrainElevation/DEM-7-{u}-{v}.bin')
             grid_altitude = np.array(grid_altitude).reshape(257, 257)
             # print(grid_altitude)
             if row_altitude is None:
@@ -209,4 +208,7 @@ if __name__ == "__main__":
         'meridian': np.repeat(wind_speed * math.cos(wind_angle), 257 * 257).reshape(257, 257)
     }
 
-    FiretoNC('fsx.nc', domainProperties, {'projection': 'EPSG:3857'}, fuel, altitude, wind)
+    FiretoNC(path, domainProperties, {'projection': 'EPSG:3857'}, fuel, altitude, wind)
+
+if __name__ == "__main__":
+    prepare_landscape(-10.9, -6, 42.1, 37, 'EPSG:3857', 'fsx.nc')
