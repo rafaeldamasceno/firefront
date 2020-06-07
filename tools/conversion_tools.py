@@ -3,6 +3,8 @@ import math
 from genForeFireCase import FiretoNC
 from pyproj import Proj, transform
 
+FSX_PROJECTION = 'EPSG:4326'
+
 lcs_to_clcs = {
     2: 333,
     17: 323,
@@ -125,13 +127,13 @@ def calculate_qmid_bounds(left, right, top, bottom):
 
     return (min_u, max_u, max_v, min_v), (min_long, max_long, max_lat, min_lat)
 
-def prepare_landscape(left, right, top, bottom, proj, path):
+def prepare_landscape(left, right, top, bottom, projection, path):
     #lcs = get_lcs()
     qmid, coords = calculate_qmid_bounds(left, right, top, bottom)
     # print(qmid, coords)
 
-    to_proj = Proj(proj) # conformal projection in metres
-    from_proj = Proj('epsg:4326') # WGS 84, used by FSX
+    to_proj = Proj(projection) # conformal projection in metres
+    from_proj = Proj(FSX_PROJECTION) # WGS 84, used by FSX
 
     sw_coords = transform(from_proj, to_proj, coords[3], coords[0])
     ne_coords = transform(from_proj, to_proj, coords[2], coords[1])
@@ -140,13 +142,14 @@ def prepare_landscape(left, right, top, bottom, proj, path):
 
     # print(length_x, length_y)
 
-    domainProperties = {
+    domain_properties = {
         'SWy': sw_coords[1],
         'SWx': sw_coords[0],
         'SWz': 0,
         'Lx': length_x,
         'Ly': length_y,
-        'Lz': 0, 't0': 0,
+        'Lz': 0,
+        't0': 0,
         'Lt': float('inf')
     }
 
@@ -208,7 +211,20 @@ def prepare_landscape(left, right, top, bottom, proj, path):
         'meridian': np.repeat(wind_speed * math.cos(wind_angle), 257 * 257).reshape(257, 257)
     }
 
-    FiretoNC(path, domainProperties, {'projection': 'EPSG:3857'}, fuel, altitude, wind)
+    FiretoNC(path, domain_properties, {'projection': projection}, fuel, altitude, wind)
+
+def convert_polygon(result):
+    from_proj = Proj('EPSG:3857') # conformal projection in metres
+    to_proj = Proj(FSX_PROJECTION) # WGS 84, used by FSX
+    polygon = result['fronts'][0]['coordinates']
+
+    new_polygon = []
+
+    for vertex in polygon.split(' '):
+        coordinates = vertex.split(',')[:2]
+        new_polygon.append(transform(from_proj, to_proj, coordinates[0], coordinates[1]))
+        
+    return new_polygon
 
 if __name__ == "__main__":
     prepare_landscape(-10.9, -6, 42.1, 37, 'EPSG:3857', 'fsx.nc')

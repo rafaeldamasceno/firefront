@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import pika
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+credentials = pika.PlainCredentials('guest', 'guest')
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='127.0.0.1', credentials=credentials))
 channel = connection.channel()
 
-channel.queue_declare(queue='hello')
+channel.basic_publish(exchange='ForeFire', routing_key='ForeFireRecv', body='INIT -86 -79 42 36 2020-03-20T12:00:00Z')
+channel.basic_publish(exchange='ForeFire', routing_key='ForeFireRecv', body='FIRE -9261781.634000361 5116146.294557266 0')
+for i in range(100):
+    channel.basic_publish(exchange='ForeFire', routing_key='ForeFireRecv', body='STEP')
 
-channel.basic_publish(exchange='', routing_key='hello', body='INIT -86 -79 42 36 EPSG:3857 2020-03-20T12:00:00Z')
-channel.basic_publish(exchange='', routing_key='hello', body='FIRE -9261781.634000361 5116146.294557266 0')
-channel.basic_publish(exchange='', routing_key='hello', body='STEP 1200')
 
 connection.close()
