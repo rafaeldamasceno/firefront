@@ -10,5 +10,4 @@ channel.basic_publish(exchange='ForeFire', routing_key='ForeFireRecv', body='FIR
 for i in range(100):
     channel.basic_publish(exchange='ForeFire', routing_key='ForeFireRecv', body='STEP')
 
-
 connection.close()
