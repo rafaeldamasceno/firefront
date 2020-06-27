@@ -45,15 +45,21 @@ winds = {}
 wind_map = None
 
 threads = []
+queue = []
+cv = threading.Condition()
 
 def send_message(msg_body):
-    channel.basic_publish(exchange='ForeFire', routing_key='ForeFireSend', body=msg_body)
+    global queue
+    with cv:
+        queue.append(msg_body)
+        cv.notify()
 
 def init(left, right, top, bottom):
     global current_time, qmid, coords, airports
 
     if forefire is not None and not forefire.terminated:
-        return
+        # return
+        forefire.terminate()
 
     qmid, coords = calculate_qmid_bounds(left, right, top, bottom)
 
@@ -73,6 +79,10 @@ def fire(lat, lon, t):
         return
     x, y = convert_coordinates((lat, lon), PROJECTION)
     forefire.sendline(f'startFire[loc=({x},{y},{t});t=0]')
+    forefire.sendline('print[]')
+    forefire.expect('({.*{.*}.*})')
+    result = json.loads(forefire.match.group(1).decode())
+    threading.Thread(target=send_fire_info, args=(result, None, None)).start()
 
 def step():
     global current_time, threads
@@ -90,7 +100,7 @@ def step():
             forefire.expect(['0: ', 'trashing'], timeout=0.1)
             new_event = True
             forefire.sendline('print[]')
-            forefire.expect('\r\n({.*})\r\n')
+            forefire.expect('({.*{.*}.*})')
             result = json.loads(forefire.match.group(1).decode())
             if result['fronts'][0]['date'] > current_time:
                 current_time = result['fronts'][0]['date']
@@ -100,16 +110,19 @@ def step():
             continue
 
 def send_fire_info(result, previous_time, start_timer):
-    polygon = convert_polygon(result, PROJECTION)
+    start_conv = time.perf_counter()
+    polygon = [f'{lat},{lon}' for lat, lon in convert_polygon(result, PROJECTION)]
+    end_conv = time.perf_counter()
+    send_message(f"STEP {result['fronts'][0]['date']} {result['fronts'][0]['area']} {' '.join(polygon)}")
     end_timer = time.perf_counter()
     if previous_time is not None:
         time_difference = (datetime.strptime(current_time, TIME_FORMAT) - datetime.strptime(previous_time, TIME_FORMAT)).total_seconds()
         # f = open(result['fronts'][0]['date'], 'w')
         # f.write(f'{time_difference} {end_timer - start_timer} {time_difference / (end_timer - start_timer)}')
         # f.close()
-        print(time_difference, end_timer - start_timer, time_difference / (end_timer - start_timer))
+        print(time_difference, end_timer - start_timer, len(polygon), end_conv-start_conv)
 
-def process_metar(airport, heading, speed, unit):
+def process_wind(airport, heading, speed, unit):
     global winds
     winds[airport] = convert_wind_to_u_v(heading, speed, unit)
     signal.setitimer(signal.ITIMER_REAL, 0.1)
@@ -162,7 +175,7 @@ def callback(ch, method, properties, body):
         top = float(parameters[2])
         bottom = float(parameters[3])
         init(left, right, top, bottom)
-    elif msg.startswith('METAR'):
+    elif msg.startswith('WIND'):
         parameters = msg.split(' ')[1:]
         if len(parameters) != 4:
             return
@@ -170,7 +183,7 @@ def callback(ch, method, properties, body):
         heading = int(parameters[1])
         speed = int(parameters[2])
         unit = parameters[3]
-        process_metar(airport, heading, speed, unit)
+        process_wind(airport, heading, speed, unit)
     elif msg.startswith('START'):
         parameters = msg.split(' ')[1:]
         if len(parameters) != 1:
@@ -191,7 +204,20 @@ def callback(ch, method, properties, body):
     elif msg.startswith('END'):
         pass
 
+def send_enqueued_messages():
+    global queue
+    connection = pika.BlockingConnection(conn_params)
+    channel = connection.channel()
+    while True:
+        with cv:
+            cv.wait()
+            if len(queue) > 0:
+                channel.basic_publish(exchange='ForeFire', routing_key='ForeFireSend', body=queue.pop(0))
+
+
 signal.signal(signal.SIGALRM, prepare_wind_map)
+
+threading.Thread(target=send_enqueued_messages).start()
 
 channel.basic_consume(queue='ForeFireRecv', on_message_callback=callback, auto_ack=True)
 

@@ -236,7 +236,7 @@ def convert_wind_to_u_v(angle, speed, unit):
     
     # not a mistake! heading has 0 deg at north and goes the other way around
     # switching the sin and cos components solves the issue
-    return (speed * math.sin(math.radians(angle)), speed * math.cos(math.radians(angle)))
+    return (speed * -math.sin(math.radians(angle)), speed * -math.cos(math.radians(angle)))
 
 def convert_coordinates(coords, projection):
     to_proj = Proj(projection) # conformal projection in metres
