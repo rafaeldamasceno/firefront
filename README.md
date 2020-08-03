@@ -1,3 +1,35 @@
+To install for using with The Platform:
+
+```
+apt-get install build-essential libnetcdf-cxx-legacy-dev
+``` 
+
+Then build a Python environment ONLY USING VERSION 3.6 (I suggest using miniconda)
+
+```
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+conda create -n firefrontenv python=3.6 scons pyproj numpy scipy pika pexpect
+```
+
+After installing the enviroment, activate it, navigate to the firefront folder and run
+
+```
+scons
+```
+
+If it errors out, try cleaning the build `scons -c` and deleting the `.sconsign.dblite` file.
+
+After that, with the environment activated, run:
+
+```
+cd tools
+python server.py
+```
+
+
+---
+
 ForeFire has been designed and run on Unix systems, three modules can be built with the source code.
 
   - An interpreter (executable)
