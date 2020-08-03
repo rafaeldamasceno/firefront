@@ -78,11 +78,12 @@ def write_to_file(filename, list, size):
                 f.write('\n')
                 n = 0
 
-def calculate_qmid_bounds(left, right, top, bottom):
+def calculate_qmid_bounds(left, right, top, bottom, surround):
     l = 7
-
-    surround = 0
     
+    if surround < 0:
+        surround = 0
+
     factor = 2 ** (l - 1)
     width = 240 / factor
     height = 180 / factor
@@ -242,7 +243,8 @@ def convert_wind_to_u_v(angle, speed, unit):
 
 def convert_coordinates(coords, projection):
     to_proj = Proj(projection) # conformal projection in metres
-    from_proj = Proj(FSX_PROJECTION) # WGS 84, used by FSX
+    from_proj = Proj(FSX_PROJECTION) # WGS 84, used by FSX, x and y are reversed as is normal with GPS coordinates
+                                     # which normally use longitude, latitude
 
     return transform(from_proj, to_proj, coords[0], coords[1])
 

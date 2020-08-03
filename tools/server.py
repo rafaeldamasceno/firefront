@@ -61,7 +61,7 @@ def init(left, right, top, bottom):
         # return
         forefire.terminate()
 
-    qmid, coords = calculate_qmid_bounds(left, right, top, bottom)
+    qmid, coords = calculate_qmid_bounds(left, right, top, bottom, 0)
     # print(qmid)
 
     with open('/mnt/c/FEUP/runways.csv') as f:
@@ -78,7 +78,7 @@ def init(left, right, top, bottom):
 def fire(lat, lon, t):
     if forefire is None or forefire.terminated:
         return
-    x, y = convert_coordinates((lat, lon), PROJECTION)
+    x, y = convert_coordinates((lat, lon), PROJECTION) 
     forefire.sendline(f'startFire[loc=({x},{y},{t});t=0]')
     forefire.sendline('print[]')
     forefire.expect(r'({.*\[.*\].*})')
@@ -139,8 +139,8 @@ def process_wind(airport, heading, speed, unit):
 def prepare_wind_map(signum, frame):
     global airports, wind_map
     airports = {airport:coordinates for airport, coordinates in airports.items() if airport in winds.keys()}
-    wind_map = calculate_wind_map(qmid, coords, winds, airports)
-    # wind_map = None
+    wind_map = calculate_wind_map(qmid, coords, winds, airports) # FOR METAR INTERPOLATION
+    # wind_map = None # FOR HOMOGENEOUS WIND
     send_message('READY')
 
 def finish_init(date):
