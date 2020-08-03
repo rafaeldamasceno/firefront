@@ -62,6 +62,7 @@ def init(left, right, top, bottom):
         forefire.terminate()
 
     qmid, coords = calculate_qmid_bounds(left, right, top, bottom)
+    # print(qmid)
 
     with open('/mnt/c/FEUP/runways.csv') as f:
         for line in f.readlines():
@@ -69,8 +70,8 @@ def init(left, right, top, bottom):
             if data[0].isalpha() and len(data[0]) == 4 and data[0] not in airports:
                 airports[data[0]] = (float(data[2]), float(data[3]))
     
-    airports = {airport: coords for airport, coords in airports.items() 
-    if (coords[1] > left and coords[1] < right and coords[0] < top and coords[0] > bottom)}
+    airports = {a: c for a, c in airports.items() 
+    if (c[1] > coords[0] and c[1] < coords[1] and c[0] < coords[2] and c[0] > coords[3])}
 
     send_message(f"WIND {' '.join([airport for airport, _ in airports.items()])}")
 
@@ -80,7 +81,7 @@ def fire(lat, lon, t):
     x, y = convert_coordinates((lat, lon), PROJECTION)
     forefire.sendline(f'startFire[loc=({x},{y},{t});t=0]')
     forefire.sendline('print[]')
-    forefire.expect('({.*{.*}.*})')
+    forefire.expect(r'({.*\[.*\].*})')
     result = json.loads(forefire.match.group(1).decode())
     threading.Thread(target=send_fire_info, args=(result, None, None)).start()
 
@@ -100,8 +101,9 @@ def step():
             forefire.expect(['0: ', 'trashing'], timeout=0.1)
             new_event = True
             forefire.sendline('print[]')
-            forefire.expect('({.*{.*}.*})')
+            forefire.expect(r'({.*\[.*\].*})')
             result = json.loads(forefire.match.group(1).decode())
+            # print(result)
             if result['fronts'][0]['date'] > current_time:
                 current_time = result['fronts'][0]['date']
             # send_fire_info(result, previous_time, start_timer)
@@ -111,16 +113,22 @@ def step():
 
 def send_fire_info(result, previous_time, start_timer):
     start_conv = time.perf_counter()
-    polygon = [f'{lat},{lon}' for lat, lon in convert_polygon(result, PROJECTION)]
+    step = "STEP"
+    polygons = 0
+    for front in result['fronts']:
+        polygon = [f'{lat},{lon}' for lat, lon in convert_polygon(front)]
+        step += f" FRONT {front['date']} {front['area']} {' '.join(polygon)}"
+        polygons += len(polygon)
     end_conv = time.perf_counter()
-    send_message(f"STEP {result['fronts'][0]['date']} {result['fronts'][0]['area']} {' '.join(polygon)}")
+    # print(step)
+    send_message(step)
     end_timer = time.perf_counter()
     if previous_time is not None:
         time_difference = (datetime.strptime(current_time, TIME_FORMAT) - datetime.strptime(previous_time, TIME_FORMAT)).total_seconds()
         # f = open(result['fronts'][0]['date'], 'w')
         # f.write(f'{time_difference} {end_timer - start_timer} {time_difference / (end_timer - start_timer)}')
         # f.close()
-        print(time_difference, end_timer - start_timer, len(polygon), end_conv-start_conv)
+        print(time_difference, end_timer - start_timer, polygons, end_conv - start_conv)
 
 def process_wind(airport, heading, speed, unit):
     global winds
@@ -132,6 +140,7 @@ def prepare_wind_map(signum, frame):
     global airports, wind_map
     airports = {airport:coordinates for airport, coordinates in airports.items() if airport in winds.keys()}
     wind_map = calculate_wind_map(qmid, coords, winds, airports)
+    # wind_map = None
     send_message('READY')
 
 def finish_init(date):
@@ -194,6 +203,8 @@ def callback(ch, method, properties, body):
         parameters = msg.split(' ')[1:]
         if len(parameters) != 3:
             return
+        # lat = "39.3743583333333"
+        # lon = "-82.9080083333333"
         lat = parameters[0]
         lon = parameters[1]
         t = parameters[2]

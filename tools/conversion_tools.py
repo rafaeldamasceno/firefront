@@ -80,6 +80,8 @@ def write_to_file(filename, list, size):
 
 def calculate_qmid_bounds(left, right, top, bottom):
     l = 7
+
+    surround = 0
     
     factor = 2 ** (l - 1)
     width = 240 / factor
@@ -125,7 +127,7 @@ def calculate_qmid_bounds(left, right, top, bottom):
         if min_v is not None and max_v is not None:
             break
 
-    return (min_u, max_u, max_v, min_v), (min_long, max_long, max_lat, min_lat)
+    return (min_u - surround, max_u + surround, max_v + surround, min_v - surround), (min_long - surround * height, max_long + surround * height, max_lat + surround * width, min_lat - surround * width)
 
 def prepare_landscape(qmid, coords, projection='EPSG:3395', wind=None, path='fsx.nc'):
     #lcs = get_lcs()
@@ -203,7 +205,7 @@ def prepare_landscape(qmid, coords, projection='EPSG:3395', wind=None, path='fsx
     # altitude = altitude.repeat(2,axis=0).repeat(2,axis=1)
 
     if (wind is None):
-        wind_speed = 30
+        wind_speed = 7.71666667
         wind_angle = math.radians(45)
 
         wind = {
@@ -213,10 +215,10 @@ def prepare_landscape(qmid, coords, projection='EPSG:3395', wind=None, path='fsx
 
     FiretoNC(path, domain_properties, {'projection': projection}, fuel, altitude, wind)
 
-def convert_polygon(result, projection):
-    from_proj = Proj(projection) # conformal projection in metres
+def convert_polygon(front):
+    from_proj = Proj(front['projection']) # conformal projection in metres
     to_proj = Proj(FSX_PROJECTION) # WGS 84, used by FSX
-    polygon = result['fronts'][0]['coordinates']
+    polygon = front['coordinates']
 
     new_polygon = []
 
