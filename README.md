@@ -1,10 +1,10 @@
-To install for using with The Platform:
+To install for using with The Platform, run:
 
 ```
 apt-get install build-essential libnetcdf-cxx-legacy-dev
 ``` 
 
-Then build a Python environment ONLY USING VERSION 3.6 (I suggest using miniconda)
+Then build a Python environment **using version 3.6 or lower** (I suggest using miniconda):
 
 ```
 conda config --add channels conda-forge
@@ -12,7 +12,7 @@ conda config --set channel_priority strict
 conda create -n firefrontenv python=3.6 scons pyproj numpy scipy pika pexpect
 ```
 
-After installing the enviroment, activate it, navigate to the firefront folder and run
+After installing the enviroment, activate it, navigate to the firefront folder and run:
 
 ```
 scons
@@ -21,6 +21,8 @@ scons
 If it errors out, try cleaning the build `scons -c` and deleting the `.sconsign.dblite` file.
 
 To run the middleware, it is expected for elevation and land class data to be in `tools/TerrainElevation/` and `tools/TerrainLandClass/`, respectively. The file `runways.csv` should be inside the `C:\FEUP` folder. The Platform's path should be adjusted in the `tools/server.py` file.
+
+With all the needed files in place, run the middleware:
 
 ```
 cd tools
