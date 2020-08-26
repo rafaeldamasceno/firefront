@@ -13,10 +13,13 @@ PROJECTION = 'EPSG:3395'
 LANDSCAPE_FILE = 'fsx.nc'
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
+PLATFORM_PATH = '/mnt/c/Users/Rafael/Desktop/SimPlatform/'
+RUNWAYS_PATH = '/mnt/c/FEUP/runways.csv'
+
 context = ssl.create_default_context(
-    cafile="/mnt/c/Users/Rafael/Desktop/SimPlatform/certificates/CA certificate/ca_certificate.pem")
-context.load_cert_chain("/mnt/c/Users/Rafael/Desktop/SimPlatform/certificates/FireFront certificate/FireFront_certificate_signed.pem",
-                        "/mnt/c/Users/Rafael/Desktop/SimPlatform/certificates/FireFront certificate/FireFront_private_key.pem")
+    cafile=f"${PLATFORM_PATH}certificates/CA certificate/ca_certificate.pem")
+context.load_cert_chain(f"${PLATFORM_PATH}certificates/FireFront certificate/FireFront_certificate_signed.pem",
+                        f"${PLATFORM_PATH}certificates/FireFront certificate/FireFront_private_key.pem")
 ssl_options = pika.SSLOptions(context, '127.0.0.1')
 conn_params = pika.ConnectionParameters(port=5671, ssl_options=ssl_options, credentials=pika.credentials.ExternalCredentials())
 
@@ -64,7 +67,7 @@ def init(left, right, top, bottom):
     qmid, coords = calculate_qmid_bounds(left, right, top, bottom, 0)
     # print(qmid)
 
-    with open('/mnt/c/FEUP/runways.csv') as f:
+    with open(RUNWAYS_PATH) as f:
         for line in f.readlines():
             data = line.split(',', 4)
             if data[0].isalpha() and len(data[0]) == 4 and data[0] not in airports:

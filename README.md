@@ -20,7 +20,7 @@ scons
 
 If it errors out, try cleaning the build `scons -c` and deleting the `.sconsign.dblite` file.
 
-After that, with the environment activated, run:
+To run the middleware, it is expected for elevation and land class data to be in `tools/TerrainElevation/` and `tools/TerrainLandClass/`, respectively. The file `runways.csv` should be inside the `C:\FEUP` folder. The Platform's path should be adjusted in the `tools/server.py` file.
 
 ```
 cd tools
