@@ -17,9 +17,9 @@ PLATFORM_PATH = '/mnt/c/Users/Rafael/Desktop/SimPlatform/'
 RUNWAYS_PATH = '/mnt/c/FEUP/runways.csv'
 
 context = ssl.create_default_context(
-    cafile=f"${PLATFORM_PATH}certificates/CA certificate/ca_certificate.pem")
-context.load_cert_chain(f"${PLATFORM_PATH}certificates/FireFront certificate/FireFront_certificate_signed.pem",
-                        f"${PLATFORM_PATH}certificates/FireFront certificate/FireFront_private_key.pem")
+    cafile=f"{PLATFORM_PATH}certificates/CA certificate/ca_certificate.pem")
+context.load_cert_chain(f"{PLATFORM_PATH}certificates/FireFront certificate/FireFront_certificate_signed.pem",
+                        f"{PLATFORM_PATH}certificates/FireFront certificate/FireFront_private_key.pem")
 ssl_options = pika.SSLOptions(context, '127.0.0.1')
 conn_params = pika.ConnectionParameters(port=5671, ssl_options=ssl_options, credentials=pika.credentials.ExternalCredentials())
 
